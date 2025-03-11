@@ -8,36 +8,58 @@ import {
   inject,
   InjectionToken,
   Injector,
-  Type,
 } from '@angular/core';
 
+const defaultExternalWindowFeatures = {
+  width: 600,
+  height: 400,
+  left: 200,
+  top: 200,
+};
+
 export const WINDOW_PORTAL_DATA = new InjectionToken('WINDOW_PORTAL_DATA');
+export const WINDOW_PORTAL_FEATURES = new InjectionToken<
+  Record<string, string | number>
+>('WINDOW_PORTAL_FEATURES');
+export const WINDOW_PORTAL_TARGET = new InjectionToken<string>(
+  'WINDOW_PORTAL_TARGET'
+);
+export const WINDOW_PORTAL_TITLE = new InjectionToken<string>(
+  'WINDOW_PORTAL_TITLE'
+);
 
 export type WindowPortalOptions<T> = {
   data?: T;
+  features?: Record<string, string | number>;
+  target?: string;
+  windowTitle?: string;
 };
 
-export const injectWindowPortal = <T>() => {
-  const parent = inject(Injector);
-
-  return {
-    createPortal: (
-      cmp: Type<unknown>,
-      options: WindowPortalOptions<T> = { data: undefined }
-    ) => {
-      const injector = Injector.create({
-        providers: [
-          {
-            provide: WINDOW_PORTAL_DATA,
-            useFactory: () => options.data,
-          },
-        ],
-        parent,
-      });
-      return new ComponentPortal(cmp, null, injector);
-    },
-  };
-};
+export const createInjector = <T>(
+  options: WindowPortalOptions<T>,
+  parent = inject(Injector)
+) =>
+  Injector.create({
+    providers: [
+      {
+        provide: WINDOW_PORTAL_DATA,
+        useFactory: () => options.data,
+      },
+      {
+        provide: WINDOW_PORTAL_FEATURES,
+        useFactory: () => options.features ?? defaultExternalWindowFeatures,
+      },
+      {
+        provide: WINDOW_PORTAL_TARGET,
+        useFactory: () => options.target ?? '',
+      },
+      {
+        provide: WINDOW_PORTAL_TITLE,
+        useFactory: () => options.windowTitle ?? '',
+      },
+    ],
+    parent,
+  });
 
 export class WindowPortalOutlet extends BasePortalOutlet {
   private applicationRef: ApplicationRef;

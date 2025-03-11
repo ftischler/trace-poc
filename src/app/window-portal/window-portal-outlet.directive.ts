@@ -1,20 +1,17 @@
-import {
-  ComponentRef,
-  Directive,
-  effect,
-  inject,
-  Injector,
-  input,
-  output,
-} from '@angular/core';
+import { ComponentRef, Directive, inject, Injector, Type } from '@angular/core';
 import { ComponentPortal } from '@angular/cdk/portal';
-import { WindowPortalOutlet } from './window-portal-outlet';
+import {
+  createInjector,
+  WINDOW_PORTAL_FEATURES,
+  WINDOW_PORTAL_TARGET,
+  WINDOW_PORTAL_TITLE,
+  WindowPortalOptions,
+  WindowPortalOutlet,
+} from './window-portal-outlet';
 
-const defaultExternalWindowFeatures = {
-  width: 600,
-  height: 400,
-  left: 200,
-  top: 200,
+export type WindowOutletRef = {
+  portalOutlet: WindowPortalOutlet;
+  externalWindowRef: Window;
 };
 
 @Directive({
@@ -23,33 +20,28 @@ const defaultExternalWindowFeatures = {
   standalone: true,
 })
 export class WindowPortalOutletDirective {
-  title = input<string>('');
-  windowName = input<string>('');
-  features = input<Record<string, string | number>>(
-    defaultExternalWindowFeatures
-  );
-  windowOpened = output<Window>();
-
   private injector = inject(Injector);
 
-  initPortalOutlet() {
-    const features = this.features();
+  initPortalOutlet(injector: Injector) {
+    const features = injector.get(WINDOW_PORTAL_FEATURES);
+    const name = injector.get(WINDOW_PORTAL_TARGET);
+    const title = injector.get(WINDOW_PORTAL_TITLE);
 
-    const externalWindow = window.open(
+    const externalWindowRef = window.open(
       '',
-      this.windowName(),
+      name,
       Object.entries(features)
         .map(([key, value]) => `${key}=${value}`)
         .join(',')
     );
 
-    if (!externalWindow) throw new Error('Failed to init external window');
+    if (!externalWindowRef) throw new Error('Failed to init external window');
 
-    externalWindow.document.write(`
+    externalWindowRef.document.write(`
         <!DOCTYPE html>
         <html>
           <head>
-            <title>${this.title()}</title>
+            <title>${title}</title>
             <base href="/">
             <style>
               body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
@@ -60,20 +52,32 @@ export class WindowPortalOutletDirective {
           </body>
         </html>
       `);
-    externalWindow.document.close();
+    externalWindowRef.document.close();
 
-    const element = externalWindow.document.getElementById('portal-outlet');
+    const element = externalWindowRef.document.getElementById('portal-outlet');
     if (!element) throw new Error('Portal Outlet not found');
 
-    this.windowOpened.emit(externalWindow);
-
-    return new WindowPortalOutlet(element, this.injector);
+    return {
+      portalOutlet: new WindowPortalOutlet(element, injector),
+      externalWindowRef,
+    } satisfies WindowOutletRef;
   }
 
-  attachComponent<T>(
+  openPortal<C, T>(component: Type<C>, options: WindowPortalOptions<T>) {
+    const injector = createInjector(options, this.injector);
+    const { portalOutlet, externalWindowRef } = this.initPortalOutlet(injector);
+    const componentRef = this.attachComponent(
+      portalOutlet,
+      new ComponentPortal<C>(component, null, injector)
+    );
+
+    return { componentRef, externalWindowRef };
+  }
+
+  private attachComponent<T>(
+    portalOutlet: WindowPortalOutlet,
     componentPortal: ComponentPortal<T>
   ): ComponentRef<T> | null {
-    const portalOutlet = this.initPortalOutlet();
     return portalOutlet?.attach(componentPortal) ?? null;
   }
 }
