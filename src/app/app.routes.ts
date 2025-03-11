@@ -7,7 +7,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'home',
-    loadComponent: () => import('./home/home'),
+    loadComponent: () => import('./home/home.component'),
   },
   {
     path: 'trace',

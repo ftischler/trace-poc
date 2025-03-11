@@ -9,10 +9,17 @@ import { WindowPortalOutletDirective } from '../window-portal/window-portal-outl
 import TraceComponent from '../trace/trace.component';
 
 @Component({
-  template: `<button mat-button (click)="openTrace()">OPEN TRACE</button>
-    <div windowPortalOutlet></div>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatButton, WindowPortalOutletDirective],
+  styles: `
+    :host {
+      display: grid;
+      height: 100%;
+      place-items: center;
+    }
+  `,
+  template: ` <button mat-button (click)="openTrace()">OPEN TRACE</button>
+    <div windowPortalOutlet class="cdk-visually-hidden"></div>`,
 })
 export default class HomeComponent implements OnDestroy {
   windowPortalOutlet = viewChild.required(WindowPortalOutletDirective);

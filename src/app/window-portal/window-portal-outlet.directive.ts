@@ -17,7 +17,6 @@ export type WindowOutletRef = {
 @Directive({
   // eslint-disable-next-line @angular-eslint/directive-selector
   selector: '[windowPortalOutlet]',
-  standalone: true,
 })
 export class WindowPortalOutletDirective {
   private injector = inject(Injector);
