@@ -9,9 +9,10 @@ import {
   WindowPortalOutlet,
 } from './window-portal-outlet';
 
-export type WindowOutletRef = {
+export type WindowOutletRef<T> = {
   portalOutlet: WindowPortalOutlet;
   externalWindowRef: Window;
+  componentRef: ComponentRef<T> | null;
 };
 
 @Directive({
@@ -59,7 +60,7 @@ export class WindowPortalOutletDirective {
     return {
       portalOutlet: new WindowPortalOutlet(element, injector),
       externalWindowRef,
-    } satisfies WindowOutletRef;
+    };
   }
 
   openPortal<C, T>(component: Type<C>, options: WindowPortalOptions<T>) {
@@ -70,7 +71,11 @@ export class WindowPortalOutletDirective {
       new ComponentPortal<C>(component, null, injector)
     );
 
-    return { componentRef, externalWindowRef };
+    return {
+      componentRef,
+      portalOutlet,
+      externalWindowRef,
+    } satisfies WindowOutletRef<C>;
   }
 
   private attachComponent<T>(
